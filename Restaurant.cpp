@@ -4,7 +4,8 @@ class customerOrder{
 public:
     Restaurant::customer* data;
     customerOrder* next;
-    customerOrder(Restaurant::customer* data, customerOrder* next = nullptr): data(data), next(next){}
+    bool QueueCheck;
+    customerOrder(Restaurant::customer* data, bool QueueCheck = false, customerOrder* next = nullptr): data(data), QueueCheck(false), next(next){}
     ~customerOrder(){
         delete data;
         delete next;
@@ -34,10 +35,11 @@ public:
     /*Hàm sử dụng cho khách nằm trong hàng chờ*/
     void AppendGuestQueue(customer*); //!Quăng khách vào hàng chờ
     customer* PopGuest(); //!Xóa phần tử đầu trong hàng chờ
+    customer* PopGuest(customer*);
     /*Hàm sử dụng cho khách nằm trong hàng chờ*/
 
     /*Hàm sử dụng để kiểm tra thứ tự khách hàng*/
-
+    void AppendOrder(customerOrder*&, customerOrder*&, customer* );
     /*Hàm sử dụng để kiểm tra thứ tự khách hàng*/
 public:
     imp_res() {
@@ -86,6 +88,63 @@ public:
     void DOMAIN_EXPANSION()
     {
         cout << "domain_expansion" << endl;
+        int JujutsuSorcerers = 0; //! Số lượng Chú thuật sư
+        int CursedSpirits = 0; //! Số lượng Oán linh
+        int TotalSocererEnergy = 0, TotalSpiritEnergy = 0;
+        //! Tách ra thành 2 danh sách chú thuật sư và oán linh
+        customerOrder* JujutsuSorcererHead = nullptr;
+        customerOrder* JujutsuSorcererTail = nullptr;
+        customerOrder* CursedSpiritsHead = nullptr;
+        customerOrder* CursedSpiritsTail = nullptr;
+        customerOrder* tempOrder = orderHead;
+        for (int i = 0; i < GuestInTable; i++){
+            if (tempOrder -> data -> energy > 0){
+                AppendOrder(JujutsuSorcererHead, JujutsuSorcererTail, tempOrder -> data);
+                TotalSocererEnergy += JujutsuSorcererTail -> data -> energy;
+                JujutsuSorcerers += 1;
+            }
+            else {
+                AppendOrder(CursedSpiritsHead, CursedSpiritsTail, tempOrder -> data);
+                TotalSpiritEnergy += abs(CursedSpiritsTail -> data -> energy);
+                CursedSpirits += 1;
+            }
+            tempOrder = tempOrder -> next;
+        }
+        customer* tempQueue = GuestQueue; //! Lấy luôn cả hàng chờ
+        for (int i = 0; i < GuestInQueue; i++){
+            if (tempOrder -> data -> energy > 0){
+                AppendOrder(JujutsuSorcererHead, JujutsuSorcererTail, tempQueue);
+                JujutsuSorcererTail -> QueueCheck = true;
+                TotalSocererEnergy += JujutsuSorcererTail -> data -> energy;
+                JujutsuSorcerers += 1;
+            }
+            else{
+                AppendOrder(CursedSpiritsHead, CursedSpiritsTail, tempQueue);
+                CursedSpiritsTail -> QueueCheck = true;
+                TotalSpiritEnergy += abs(CursedSpiritsTail -> data -> energy);
+                CursedSpirits += 1;
+            }
+            tempQueue = tempQueue -> next;
+        }
+        //! Tổng ENERGY của tất cả chú thuật sư lớn hơn hoặc bằng tổng trị tuyệt đối ENERGY
+        //của tất cả chú linh có mặt tại nhà hàng
+        if (TotalSocererEnergy >= TotalSpiritEnergy){
+            for (int i = 0; i < CursedSpirits; i++){
+                customerOrder* temp = CursedSpiritsHead;
+                CursedSpiritsHead = CursedSpiritsHead -> next;
+                if (temp -> QueueCheck){
+
+                }
+                else{
+
+                }
+            }
+        }
+        else{
+            for (int i = 0; i < JujutsuSorcerers; i++){
+
+            }
+        }
     }
     void LIGHT(int num)
     {
@@ -114,6 +173,15 @@ public:
     }
 };
 
+void imp_res::AppendOrder(customerOrder *& head, customerOrder *& tail, customer* Customer) {
+    if (!head && !tail){
+        head = tail = new customerOrder(Customer);
+        return;
+    }
+    tail -> next = new customerOrder(Customer);
+    tail = tail -> next;
+}
+
 bool imp_res::CheckDuplicate(customer* cus) {
     customer* tempTable = TableOrder;
     customer* tempQueue = GuestQueue;
@@ -134,7 +202,7 @@ void imp_res::AppendGuestTable(customer* cus) {
         TableOrder -> next = TableOrder -> prev = TableOrder;
         GuestInTable = 1;
         CustomerX = TableOrder;
-        orderHead = orderTail = new customerOrder(CustomerX);
+        AppendOrder(orderHead, orderTail, CustomerX);
         return;
     }
     //! Trường hợp bàn ăn không trống
@@ -162,8 +230,7 @@ void imp_res::AppendGuestTable(customer* cus) {
         CustomerX -> prev = cus;
     }
     CustomerX = cus;
-    orderTail -> next = new customerOrder(CustomerX);
-    orderTail = orderTail -> next;
+    AppendOrder(orderHead, orderTail, CustomerX);
     GuestInTable += 1;
 }
 
