@@ -4,7 +4,10 @@ class customerOrder{
 public:
     Restaurant::customer* data;
     customerOrder* next;
-    customerOrder(Restaurant::customer* data, customerOrder* next = nullptr): data(data), next(next){}
+    customerOrder* prev;
+    bool QueueCheck;
+    customerOrder(Restaurant::customer* data, bool QueueCheck = false, customerOrder* next = nullptr, customerOrder* prev = nullptr):
+            data(data), QueueCheck(QueueCheck), next(next), prev(prev){}
     ~customerOrder(){
         delete data;
         delete next;
@@ -28,17 +31,23 @@ public:
 
     /* Hàm sử dụng cho khách ngồi trong bàn ăn */
     void AppendGuestTable(customer*); //!Quăng khách vào bàn
-    void RemoveGuestOrder(int);
+    void RemoveGuestOrder(int, customerOrder*&, customerOrder*&);
     /* Hàm sử dụng cho khách ngồi trong bàn ăn */
 
     /*Hàm sử dụng cho khách nằm trong hàng chờ*/
     void AppendGuestQueue(customer*); //!Quăng khách vào hàng chờ
     customer* PopGuest(); //!Xóa phần tử đầu trong hàng chờ
+    customer* PopGuest(customer*);
     /*Hàm sử dụng cho khách nằm trong hàng chờ*/
 
     /*Hàm sử dụng để kiểm tra thứ tự khách hàng*/
-
+    void AppendOrder(customerOrder*&, customerOrder*&, customer* );
+    void ClearOrder(customerOrder*&, customerOrder*&);
     /*Hàm sử dụng để kiểm tra thứ tự khách hàng*/
+
+    void DeleteType(customerOrder*& head, customerOrder*& tail, int &length);
+    bool JujutsuCheckTable(); //!Kiểm tra trong bàn ăn toàn chú thuật sư
+    bool CursedSpiritTable(); //!Kiểm tra trong bàn ăn toàn oán linh
 public:
     imp_res() {
         TableOrder = nullptr;
@@ -46,10 +55,11 @@ public:
         GuestInTable = 0;
         GuestInQueue = 0;
         CustomerX = nullptr;
+        orderHead = orderTail = nullptr;
     };
     void RED(string name, int energy)
     {
-        cout << name << " " << energy << endl;
+        //cout << name << " " << energy << endl;
         customer *cus = new customer (name, energy, nullptr, nullptr);
         if (cus->energy == 0) return; //! Không phải chú thuật sư hay chú linh
         if (CheckDuplicate(cus)) return; //! "thiên thượng thiên hạ, duy ngã độc tôn"
@@ -62,10 +72,10 @@ public:
     }
     void BLUE(int num)
     {
-        cout << "blue "<< num << endl;
+        //cout << "blue "<< num << endl;
         if (GuestInTable == 0) return;
-        if (num >= MAXSIZE || num >= GuestInTable) RemoveGuestOrder(GuestInTable);
-        else RemoveGuestOrder(num);
+        if (num >= MAXSIZE || num >= GuestInTable) RemoveGuestOrder(GuestInTable, orderHead, orderTail);
+        else RemoveGuestOrder(num, orderHead, orderTail);
         while (GuestInQueue != 0 && GuestInTable < MAXSIZE){
             customer* FirstGuest = PopGuest();
             AppendGuestTable(FirstGuest);
@@ -82,10 +92,230 @@ public:
     void UNLIMITED_VOID()
     {
         cout << "unlimited_void" << endl;
+        if (GuestInTable <= 3) return;
+        if (GuestInTable == 4){
+            customer* temp = CustomerX;
+            customer* res = nullptr;
+            int MinEnergy = INT_MAX;
+            for (int i = 0; i < GuestInTable; i++){
+                if (MinEnergy > temp -> energy){
+                    MinEnergy = temp -> energy;
+                    res = temp;
+                }
+                temp = temp -> next;
+            }
+            for (int i = 0; i < GuestInTable; i++){
+                res -> print();
+                res = res -> next;
+            }
+            return;
+        }
+        if (JujutsuCheckTable()){
+            customer* temp = CustomerX;
+            int TotalEnergy = 0;
+            for (int i = 0; i < 4; i++){
+                TotalEnergy += temp -> energy;
+                temp = temp -> next;
+            }
+            customer* p = CustomerX;
+            customer* ansStart = CustomerX; customer* ansEnd = temp;
+            int MinEnergyI = TotalEnergy;
+            for (int i = 4; i < GuestInTable; i++){
+                if (TotalEnergy - p -> energy + temp -> energy < MinEnergyI){
+                    ansStart = p -> next;
+                    ansEnd = temp;
+                    MinEnergyI = TotalEnergy - p -> energy + temp -> energy;
+                }
+                TotalEnergy = TotalEnergy - p -> energy + temp -> energy;
+                p = p -> next;
+                temp = temp -> next;
+            }
+            int MinEnergy = INT_MAX;
+            customer* MinIndex = nullptr;
+            customer* Res = nullptr;
+            for (int i = 0; i < 4; i++){
+                customer* newCus = new customer(ansStart -> name, ansStart -> energy, nullptr, nullptr);
+                if (Res == nullptr){
+                    Res = newCus;
+                    Res -> next = Res -> prev = Res;
+                }
+                else{
+                    Res -> prev -> next = newCus;
+                    newCus -> prev = Res -> prev;
+                    newCus -> next = Res;
+                    Res -> prev = newCus;
+                }
+                ansStart = ansStart -> next;
+            }
+            customer* tempRes = Res;
+            int MinRes = INT_MAX;
+            for (int i = 0; i < 4; i++){
+                if (MinRes > tempRes -> energy){
+                    MinRes = tempRes -> energy;
+                    MinIndex = tempRes;
+                }
+                tempRes = tempRes -> next;
+            }
+            for (int i = 0; i < 4; i++){
+                MinIndex -> print();
+                MinIndex = MinIndex -> next;
+            }
+            return;
+        }
+        if (CursedSpiritTable()){
+            customer* MinIndex = nullptr;
+            int MinEnergy = INT_MAX;
+            customer* temp = CustomerX;
+            for (int i = 0; i < GuestInTable; i++){
+                if (MinEnergy > temp -> energy){
+                    MinEnergy = temp -> energy;
+                    MinIndex = temp;
+                }
+                temp = temp -> next;
+            }
+            for (int i = 0; i < GuestInTable; i++){
+                MinIndex -> print();
+                MinIndex = MinIndex -> next;
+            }
+            return;
+        }
+        int MinEnergy = INT_MAX, AnsElementCount = 0;
+        customer* temp = CustomerX;
+        customer* start = nullptr; customer* end = nullptr;
+        for (int i = 0; i < GuestInTable - 3; i++){
+            int TotalEnergy = 0, ElementCount = 0;
+            customer* temp_J = temp;
+            for (int j = 0; j < GuestInTable; j++){
+                TotalEnergy += temp -> energy;
+                ElementCount += 1;
+                if (ElementCount >= 4){
+                    if (start == nullptr && end == nullptr){
+                        start = temp; end = temp_J;
+                        MinEnergy = TotalEnergy;
+                        AnsElementCount = ElementCount;
+                    }
+                    else if (MinEnergy > TotalEnergy){
+                        MinEnergy = TotalEnergy;
+                        start = temp; end = temp_J;
+                        AnsElementCount = ElementCount;
+                    }
+                }
+                temp_J = temp_J -> next;
+            }
+            temp = temp -> next;
+        }
+        customer* Res = nullptr; //! Dãy con liên tiếp dài nhất có tổng nhỏ nhất
+        int cnt = 0;
+        for (int i = 0; i < AnsElementCount; i++){
+            customer* newCus = new customer(start -> name, start -> energy, nullptr, nullptr);
+            if (Res == nullptr){
+                Res = newCus;
+                Res -> next = Res -> prev = Res;
+            }
+            else{
+                Res -> prev -> next = newCus;
+                newCus -> prev = Res -> prev;
+                newCus -> next = Res;
+                Res -> prev = newCus;
+            }
+            start = start -> next;
+        }
+        customer* tempRes = Res;
+        customer* MinIndex = nullptr;
+        int MinRes = INT_MAX;
+        for (int i = 0; i < AnsElementCount; i++){
+            if (MinRes > tempRes -> energy){
+                MinRes = tempRes -> energy;
+                MinIndex = tempRes;
+            }
+            tempRes = tempRes -> next;
+        }
+        for (int i = 0; i < AnsElementCount; i++){
+            MinIndex -> print();
+            MinIndex = MinIndex -> next;
+        }
     }
     void DOMAIN_EXPANSION()
     {
-        cout << "domain_expansion" << endl;
+        //cout << "domain_expansion" << endl;
+        if (GuestInTable == 0) return;
+        int JujutsuSorcerers = 0; //! Số lượng Chú thuật sư
+        int CursedSpirits = 0; //! Số lượng Oán linh
+        int TotalSocererEnergy = 0, TotalSpiritEnergy = 0;
+        //! Tách ra thành 2 danh sách chú thuật sư và oán linh
+        customerOrder* JujutsuSorcererHead = nullptr;
+        customerOrder* JujutsuSorcererMid = nullptr;
+        customerOrder* JujutsuSorcererTail = nullptr;
+        customerOrder* CursedSpiritsHead = nullptr;
+        customerOrder* CursedSpiritsMid = nullptr;
+        customerOrder* CursedSpiritsTail = nullptr;
+        customerOrder* tempOrder = orderHead;
+        for (int i = 0; i < GuestInTable; i++){
+            if (tempOrder -> data -> energy > 0){
+                AppendOrder(JujutsuSorcererHead, JujutsuSorcererTail, tempOrder -> data);
+                TotalSocererEnergy += JujutsuSorcererTail -> data -> energy;
+                JujutsuSorcerers += 1;
+            }
+            else {
+                AppendOrder(CursedSpiritsHead, CursedSpiritsTail, tempOrder -> data);
+                TotalSpiritEnergy += abs(CursedSpiritsTail -> data -> energy);
+                CursedSpirits += 1;
+            }
+            tempOrder = tempOrder -> next;
+        }
+        JujutsuSorcererMid = JujutsuSorcererTail; CursedSpiritsMid = CursedSpiritsTail;
+        customer* tempQueue = GuestQueue; //! Lấy luôn cả hàng chờ
+        for (int i = 0; i < GuestInQueue; i++){
+            if (tempQueue -> energy > 0){
+                AppendOrder(JujutsuSorcererHead, JujutsuSorcererTail, tempQueue);
+                JujutsuSorcererTail -> QueueCheck = true;
+                TotalSocererEnergy += JujutsuSorcererTail -> data -> energy;
+                JujutsuSorcerers += 1;
+            }
+            else{
+                AppendOrder(CursedSpiritsHead, CursedSpiritsTail, tempQueue);
+                CursedSpiritsTail -> QueueCheck = true;
+                TotalSpiritEnergy += abs(CursedSpiritsTail -> data -> energy);
+                CursedSpirits += 1;
+            }
+            tempQueue = tempQueue -> next;
+        }
+        //! Tổng ENERGY của tất cả chú thuật sư lớn hơn hoặc bằng tổng trị tuyệt đối ENERGY
+        //của tất cả chú linh có mặt tại nhà hàng
+        if (TotalSocererEnergy >= TotalSpiritEnergy){
+            DeleteType(CursedSpiritsHead, CursedSpiritsTail, CursedSpirits);
+        }
+        else{
+            DeleteType(JujutsuSorcererHead, JujutsuSorcererTail, JujutsuSorcerers);
+        }
+        ClearOrder(orderHead, orderTail); //Xóa thứ tự khách ban đầu
+        if (JujutsuSorcerers){
+            if (JujutsuSorcererMid != nullptr){
+                orderHead = JujutsuSorcererHead;
+                orderTail = JujutsuSorcererMid;
+                ClearOrder(JujutsuSorcererMid -> next, JujutsuSorcererTail);
+                JujutsuSorcererMid -> next = nullptr;
+            }
+            else ClearOrder(JujutsuSorcererHead, JujutsuSorcererTail);
+            while (GuestInQueue != 0 && GuestInTable < MAXSIZE){
+                customer* Guest = PopGuest();
+                AppendGuestTable(Guest);
+            }
+        }
+        else{
+            if (CursedSpiritsMid != nullptr){
+                orderHead = CursedSpiritsHead;
+                orderTail = CursedSpiritsMid;
+                ClearOrder(CursedSpiritsMid -> next, CursedSpiritsTail);
+                CursedSpiritsMid -> next = nullptr;
+            }
+            else ClearOrder(CursedSpiritsHead, CursedSpiritsTail);
+            while (GuestInQueue != 0 && GuestInTable < MAXSIZE){
+                customer* Guest = PopGuest();
+                AppendGuestTable(Guest);
+            }
+        }
+        TableOrder = orderHead -> data;
     }
     void LIGHT(int num)
     {
@@ -114,6 +344,27 @@ public:
     }
 };
 
+void imp_res::AppendOrder(customerOrder *& head, customerOrder *& tail, customer* Customer) {
+    if (!head && !tail){
+        head = tail = new customerOrder(Customer);
+        return;
+    }
+    tail -> next = new customerOrder(Customer);
+    tail -> next -> prev = tail;
+    tail = tail -> next;
+}
+
+void imp_res::ClearOrder(customerOrder*& head, customerOrder*& tail) {
+    while(head != nullptr){
+        customerOrder * temp = head;
+        head = head -> next;
+        temp -> data = nullptr;
+        temp -> next = temp -> prev = nullptr;
+        delete temp;
+    }
+    head = tail = nullptr;
+}
+
 bool imp_res::CheckDuplicate(customer* cus) {
     customer* tempTable = TableOrder;
     customer* tempQueue = GuestQueue;
@@ -134,7 +385,7 @@ void imp_res::AppendGuestTable(customer* cus) {
         TableOrder -> next = TableOrder -> prev = TableOrder;
         GuestInTable = 1;
         CustomerX = TableOrder;
-        orderHead = orderTail = new customerOrder(CustomerX);
+        AppendOrder(orderHead, orderTail, CustomerX);
         return;
     }
     //! Trường hợp bàn ăn không trống
@@ -162,8 +413,7 @@ void imp_res::AppendGuestTable(customer* cus) {
         CustomerX -> prev = cus;
     }
     CustomerX = cus;
-    orderTail -> next = new customerOrder(CustomerX);
-    orderTail = orderTail -> next;
+    AppendOrder(orderHead, orderTail, CustomerX);
     GuestInTable += 1;
 }
 
@@ -200,24 +450,77 @@ Restaurant::customer* imp_res::PopGuest() {
     return tempGuest;
 }
 
-//! BLUE FUNCTION
-void imp_res::RemoveGuestOrder(int num) {
+Restaurant::customer* imp_res::PopGuest(Restaurant::customer * cus) {
+    customer* tempGuest = nullptr;
+    if (GuestQueue == 0) return nullptr;
+    if ((GuestInQueue == 1 && cus == GuestQueue) || cus == GuestQueue){
+        tempGuest = PopGuest();
+        return tempGuest;
+    }
+    cus -> prev -> next = cus -> next;
+    cus -> next -> prev = cus -> prev;
+    tempGuest = cus;
+    tempGuest -> next = tempGuest -> prev = nullptr;
+    GuestInQueue -= 1;
+    return tempGuest;
+}
+
+void imp_res::RemoveGuestOrder(int num, customerOrder*& head, customerOrder*& tail) {
+    //if (!head && !tail) return;
     for (int i = 0; i < num; i++){
-        customerOrder* tempOrder = orderHead;
-        orderHead = orderHead -> next;
+        customerOrder* tempOrder = head;
+        head = head -> next;
         if (tempOrder -> data == TableOrder && tempOrder -> next != nullptr) TableOrder = tempOrder -> next -> data;
         if (tempOrder -> data -> energy > 0) CustomerX = tempOrder -> data -> next;
         else CustomerX = tempOrder -> data -> prev;
         tempOrder -> data -> prev -> next = tempOrder -> data -> next;
         tempOrder -> data -> next -> prev = tempOrder -> data -> prev;
         tempOrder -> data -> next = tempOrder -> data -> prev = nullptr;
-        tempOrder -> next = nullptr;
+        tempOrder -> next = tempOrder -> prev = nullptr;
         delete tempOrder;
         GuestInTable -= 1;
         if (GuestInTable == 0){
             CustomerX = TableOrder = nullptr;
-            orderHead = orderTail = nullptr;
+            ClearOrder(orderHead, orderTail); //! Phòng trường hợp bất trắc
         }
     }
 }
-//! BLUE FUNCTION
+
+void imp_res::DeleteType(customerOrder *&head, customerOrder *&tail, int &length) {
+    customerOrder* temp = tail;
+    for (int i = 0; i < length; i++){
+        temp -> data -> print();
+        temp = temp -> prev;
+    }
+    for (int i = 0; i < length; i++){
+        if (head != nullptr && head -> QueueCheck){
+            temp = head;
+            head = head -> next;
+            PopGuest(temp -> data);
+            temp -> next = temp -> prev = nullptr;
+            delete temp;
+        }
+        else{
+            RemoveGuestOrder(1, head, tail);
+        }
+    }
+    length = 0;
+}
+
+bool imp_res::JujutsuCheckTable() {
+    customer* temp = CustomerX;
+    for (int i = 0; i < GuestInTable; i++){
+        if (temp->energy < 0) return false;
+        temp = temp -> next;
+    }
+    return true;
+}
+
+bool imp_res::CursedSpiritTable() {
+    customer* temp = CustomerX;
+    for (int i = 0; i < GuestInTable; i++){
+        if (temp->energy > 0) return false;
+        temp = temp -> next;
+    }
+    return true;
+}
