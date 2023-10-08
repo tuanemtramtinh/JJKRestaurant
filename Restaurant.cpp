@@ -7,7 +7,7 @@ public:
     customerOrder* prev;
     bool QueueCheck;
     customerOrder(Restaurant::customer* data, bool QueueCheck = false, customerOrder* next = nullptr, customerOrder* prev = nullptr):
-            data(data), QueueCheck(false), next(next), prev(prev){}
+            data(data), QueueCheck(QueueCheck), next(next), prev(prev){}
     ~customerOrder(){
         delete data;
         delete next;
@@ -48,6 +48,8 @@ public:
     void DeleteType(customerOrder*& head, customerOrder*& tail, int &length);
     bool JujutsuCheckTable(); //!Kiểm tra trong bàn ăn toàn chú thuật sư
     bool CursedSpiritTable(); //!Kiểm tra trong bàn ăn toàn oán linh
+    void SwapNode(customer*&, customer*&);
+    customer* findMin(customer* start, customer* end, int length);
 public:
     imp_res() {
         TableOrder = nullptr;
@@ -83,92 +85,156 @@ public:
     }
     void PURPLE()
     {
-        cout << "purple"<< endl;
+        //cout << "purple"<< endl;
     }
     void REVERSAL()
     {
-        cout << "reversal" << endl;
+        //cout << "reversal" << endl;
+        if (GuestInTable == 1 || GuestInTable == 0) return;
+        int Sorcerers = 0, Spirits = 0;
+        customer* temp = CustomerX;
+        for (int i = 0; i < GuestInTable; i++){
+            if (temp -> energy > 0) Sorcerers += 1;
+            else Spirits += 1;
+            temp = temp -> next;
+        }
+        temp = CustomerX;
+        customer* head = nullptr; customer* tail = nullptr;
+        //! Đảo ngược oán linh trước
+        for (int i = 0; i < GuestInTable; i++){
+            if (temp -> energy < 0){
+                head = temp;
+                break;
+            }
+            temp = temp -> prev;
+        }
+        int num = 0;
+        if (head != CustomerX){
+            temp = CustomerX;
+            num = GuestInTable;
+        }
+        else{
+            temp = CustomerX -> next;
+            num = GuestInTable - 1;
+        }
+        for (int i = 0; i < num; i++){
+            if (temp -> energy < 0){
+                tail = temp;
+                break;
+            }
+            temp = temp -> next;
+        }
+        if (head != tail && Spirits > 1) {
+            while(true){
+                SwapNode(head, tail);
+                head = head -> prev;
+                while(head -> energy > 0){
+                    head = head -> prev;
+                }
+                if (head == tail) break;
+                tail = tail -> next;
+                while(tail -> energy > 0){
+                    tail = tail -> next;
+                }
+                if (tail == head) break;
+            }
+            SwapNode(head, tail);
+            while (true){
+                if (head == tail) break;
+                if (head->energy < 0 && tail->energy < 0) {
+                    SwapNode(head, tail);
+                    head = head->prev;
+                    if (head == tail) break;
+                    tail = tail->next;
+                    if (head == tail) break;
+                }
+                if (head -> energy > 0) head = head->prev;
+                if (head == tail) break;
+                if (tail -> energy > 0) tail = tail->next;
+                if (head == tail) break;
+            }
+        }
+        //! Đảo ngược oán linh trước
+        head = nullptr; tail = nullptr; num = 0; temp = CustomerX;
+        //! Đảo ngược chú thuật sư
+        for (int i = 0; i < GuestInTable; i++){
+            if (temp -> energy > 0){
+                head = temp;
+                break;
+            }
+            temp = temp -> prev;
+        }
+        if (head != CustomerX){
+            temp = CustomerX;
+            num = GuestInTable;
+        }
+        else{
+            temp = CustomerX -> next;
+            num = GuestInTable - 1;
+        }
+        for (int i = 0; i < num; i++){
+            if (temp -> energy > 0){
+                tail = temp;
+                break;
+            }
+            temp = temp -> next;
+        }
+        if (head != tail && Sorcerers > 1) {
+            while(true){
+                SwapNode(head, tail);
+                head = head -> prev;
+                while (head -> energy < 0){
+                    head = head -> prev;
+                }
+                if (head == tail) break;
+                tail = tail -> next;
+                while (tail -> energy < 0){
+                    tail = tail -> next;
+                }
+                if (tail == head) break;
+            }
+        }
+        //! Đảo ngược chú thuật sư
     }
     void UNLIMITED_VOID()
     {
-        cout << "unlimited_void" << endl;
+        //cout << "unlimited_void" << endl;
         if (GuestInTable <= 3) return;
-        if (GuestInTable == 4){
-            customer* temp = CustomerX;
-            customer* res = nullptr;
-            int min_element = INT_MAX;
-            for (int i = 0; i < GuestInTable; i++){
-                if (min_element > temp -> energy){
-                    min_element = temp -> energy;
-                    res = temp;
-                }
-                temp = temp -> next;
-            }
-            for (int i = 0; i < GuestInTable; i++){
-                res -> print();
-                res = res -> next;
-            }
-            return;
-        }
-        if (JujutsuCheckTable() || CursedSpiritTable()){
-            customer* temp = CustomerX;
-            int TotalEnergy = 0;
-            for (int i = 0; i < 4; i++){
-                TotalEnergy += temp -> energy;
-                temp = temp -> next;
-            }
-            customer* p = CustomerX;
-            customer* ansStart = CustomerX; customer* ansEnd = temp;
-            for (int i = 4; i < GuestInTable; i++){
-                if (TotalEnergy - p -> energy + temp -> next -> energy < TotalEnergy){
-                    ansStart = p -> next;
-                    ansEnd = temp -> next;
-                }
-                TotalEnergy = TotalEnergy - p -> energy + temp -> next -> energy;
-                p = p -> next;
-                temp = temp -> next;
-            }
-            return;
-        }
+        int MinEnergy = INT_MAX, AnsElementCount = 0;
         customer* temp = CustomerX;
-        int TotalEnergy = 0;
-        for (int i = 0; i < 4; i++){
-            TotalEnergy += temp -> energy;
+        customer* start = nullptr; customer* end = nullptr;
+        for (int i = 0; i < GuestInTable; i++){
+            int TotalEnergy = 0, ElementCount = 0;
+            customer* temp_J = temp;
+            for (int j = i; j < GuestInTable + i; j++){
+                TotalEnergy += temp_J -> energy;
+                ElementCount += 1;
+                if (ElementCount >= 4){
+                    if (start == nullptr && end == nullptr){
+                        start = temp; end = temp_J;
+                        MinEnergy = TotalEnergy;
+                        AnsElementCount = ElementCount;
+                    }
+                    else if (MinEnergy >= TotalEnergy){
+                        MinEnergy = TotalEnergy;
+                        start = temp; end = temp_J;
+                        AnsElementCount = ElementCount;
+                    }
+                }
+                temp_J = temp_J -> next;
+            }
             temp = temp -> next;
         }
-        customer* start = CustomerX;
-        for (int i = 4; i < GuestInTable; i++){
-
+        customer* MinIndex = findMin(start, end, AnsElementCount);
+        customer* tempMinIndex = MinIndex;
+        do{
+            tempMinIndex -> print();
+            tempMinIndex = tempMinIndex -> next;
+        }while(tempMinIndex != end -> next);
+        while(start != MinIndex){
+            start -> print();
+            start = start -> next;
         }
-//        //Kadane cho trường hợp vừa có âm vừa có dương
-//        int TotalEnergy_Now = 0, TotalEnergy_Final = INT_MAX;
-//        customer* temp = CustomerX;
-//        customer* start = nullptr; customer* ansStart = nullptr; customer* ansEnd = nullptr;
-//        int elementCount = 0;
-//        start = nullptr;
-//        for (int i = 0; i < GuestInTable; i++){
-//            if (start == nullptr){
-//                start = temp;
-//            }
-//            TotalEnergy_Now += temp -> energy;
-//            elementCount += 1;
-//            if (TotalEnergy_Now >= TotalEnergy_Final && elementCount >= 4){
-//                TotalEnergy_Final = TotalEnergy_Now;
-//                ansStart = start;
-//                ansEnd = temp;
-//            }
-//            else if (TotalEnergy_Final > TotalEnergy_Now){
-//                TotalEnergy_Final = TotalEnergy_Now;
-//                ansStart = start;
-//                ansEnd = temp;
-//            }
-//            if (TotalEnergy_Now > 0){
-//                TotalEnergy_Now = 0;
-//                elementCount = 0;
-//                start = nullptr;
-//            }
-//            temp = temp -> next;
-//        }
     }
     void DOMAIN_EXPANSION()
     {
@@ -254,7 +320,7 @@ public:
     }
     void LIGHT(int num)
     {
-        cout << "light " << num << endl;
+        //cout << "light " << num << endl;
         if (num > 0){
             customer* temp = CustomerX;
             for (int i = 0; i < GuestInTable; i++) {
@@ -458,4 +524,33 @@ bool imp_res::CursedSpiritTable() {
         temp = temp -> next;
     }
     return true;
+}
+
+Restaurant::customer* imp_res::findMin(Restaurant::customer *start, Restaurant::customer *end, int length) {
+    int min_val = INT_MAX;
+    customer* MinIndex = nullptr;
+    for (int i = 0; i < length; i++){
+        if (min_val > start -> energy){
+            MinIndex = start;
+            min_val = start -> energy;
+        }
+        start = start -> next;
+    }
+    return MinIndex;
+}
+
+void imp_res::SwapNode(Restaurant::customer *& Cus1, Restaurant::customer *& Cus2) {
+    customer * temp = Cus1 -> next;
+    Cus1 -> next = Cus2 -> next;
+    Cus2 -> next = temp;
+    Cus1 -> next -> prev = Cus1;
+    Cus2 -> next -> prev = Cus2;
+    temp = Cus1 -> prev;
+    Cus1 -> prev = Cus2 -> prev;
+    Cus2 -> prev = temp;
+    Cus1 -> prev -> next = Cus1;
+    Cus2 -> prev -> next = Cus2;
+    temp = Cus1;
+    Cus1 = Cus2;
+    Cus2 = temp;
 }
