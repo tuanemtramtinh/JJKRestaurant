@@ -81,7 +81,6 @@ public:
             customerOrder*temp = orderHead;
             orderHead = orderHead -> next;
             delete temp;
-            
         }
         TableOrder = nullptr;
         GuestQueue = nullptr;
@@ -105,7 +104,6 @@ public:
         if (GuestInTable == MAXSIZE){ //! Thêm khách vào hàng chờ
             if (GuestInQueue == MAXSIZE){
                 delete cus;
-                
                 return;
             }
             AppendGuestQueue(cus);
@@ -152,6 +150,7 @@ public:
             }
         }
         int NUM = ShellSort(GuestQueue, SizeToSort);
+        //cout << NUM << endl;
         BLUE(NUM % MAXSIZE);
     }
     void REVERSAL()
@@ -308,17 +307,14 @@ public:
     void DOMAIN_EXPANSION()
     {
         //cout << "domain_expansion" << endl;
-        //if (CustomerX != nullptr) cout << CustomerX -> name << endl;
         if (GuestInTable == 0 && GuestQueue == 0) return;
         int JujutsuSorcerers = 0; //! Số lượng Chú thuật sư
         int CursedSpirits = 0; //! Số lượng Oán linh
         int TotalSocererEnergy = 0, TotalSpiritEnergy = 0;
         //! Tách ra thành 2 danh sách chú thuật sư và oán linh
         customerOrder* JujutsuSorcererHead = nullptr;
-        //customerOrder* JujutsuSorcererMid = nullptr;
         customerOrder* JujutsuSorcererTail = nullptr;
         customerOrder* CursedSpiritsHead = nullptr;
-        //customerOrder* CursedSpiritsMid = nullptr;
         customerOrder* CursedSpiritsTail = nullptr;
         customerOrder* tempOrder = orderHead;
         for (int i = 0; i < GuestInTable + GuestInQueue; i++){
@@ -327,17 +323,17 @@ public:
                 if (tempOrder -> QueueCheck) JujutsuSorcererTail -> QueueCheck = true;
                 TotalSocererEnergy += JujutsuSorcererTail -> data -> energy;
                 JujutsuSorcerers += 1;
-
             }
             else if (tempOrder -> data -> energy < 0) {
                 AppendOrder(CursedSpiritsHead, CursedSpiritsTail, tempOrder -> data);
                 if (tempOrder -> QueueCheck) CursedSpiritsTail -> QueueCheck = true;
-                TotalSpiritEnergy += abs(CursedSpiritsTail -> data -> energy);
+                TotalSpiritEnergy += CursedSpiritsTail -> data -> energy;
                 CursedSpirits += 1;
-
             }
             tempOrder = tempOrder -> next;
         }
+        TotalSpiritEnergy += TotalSocererEnergy;
+        TotalSpiritEnergy = abs(TotalSpiritEnergy);
         //! Tổng ENERGY của tất cả chú thuật sư lớn hơn hoặc bằng tổng trị tuyệt đối ENERGY
         //của tất cả chú linh có mặt tại nhà hàng
         if (TotalSocererEnergy >= TotalSpiritEnergy) DeleteType(CursedSpiritsHead, CursedSpiritsTail, CursedSpirits);
@@ -392,10 +388,12 @@ public:
 void imp_res::AppendOrder(customerOrder *& head, customerOrder *& tail, customer* Customer) {
     if (!head && !tail){
         head = tail = new customerOrder(Customer);
+        
         return;
     }
     customerOrder* newCus = new customerOrder(Customer);
     tail -> next = newCus;
+    
     newCus -> prev = tail;
     tail = newCus;
 }
@@ -567,20 +565,20 @@ void imp_res::DeleteType(customerOrder *&head, customerOrder *&tail, int &length
         temp = temp -> prev;
     }
     for (int i = 0; i < length; i++){
-        if (tail != nullptr && tail -> QueueCheck){
-            temp = tail;
+        if (head != nullptr && head -> QueueCheck){
+            temp = head;
             PopGuest(temp -> data);
-            tail = tail -> prev;
+            head = head -> next;
             delete temp;
         }
         else {
-            customerOrder* tempOrder = tail;
+            customerOrder* tempOrder = head;
             if (tempOrder->data->energy > 0) CustomerX = tempOrder->data->next;
             else if (tempOrder->data->energy < 0) CustomerX = tempOrder->data->prev;
             tempOrder->data->prev->next = tempOrder->data->next;
             tempOrder->data->next->prev = tempOrder->data->prev;
-            if (tempOrder == tail) {
-                tail = tail->prev;
+            if (tempOrder == head) {
+                head = head->next;
                 delete tempOrder;
             }
             GuestInTable -= 1;
@@ -650,11 +648,11 @@ bool imp_res::checkCus(Restaurant::customer * Cus1, Restaurant::customer *Cus2) 
 int imp_res::InsSort(Restaurant::customer*& list, int size, int incr) {
     int SwapCount = 0; //! Đếm số lần Swap
     for (int i = incr; i < size; i++){
-        for (int j = i; j >= incr ; j -= incr){
+        for (int j = i; j >= incr /*&& abs(at(list, j) -> energy) > abs(at(list, j - incr) -> energy)*/; j -= incr){
             customer* Cus1 = at(list, j);
             customer* Cus2 = at(list, j - incr);
             if (abs(Cus1 -> energy) > abs(Cus2 -> energy) ||
-                abs(Cus1 -> energy) == abs(Cus2 -> energy) && checkCus(Cus1, Cus2)){
+                abs(Cus1 -> energy) == abs(Cus2 -> energy) && checkCus(Cus1, Cus2) /*IndexOf(Cus1) < IndexOf(Cus2)*/){
                 if (Cus1 == GuestQueue) GuestQueue = Cus2;
                 else if (Cus2 == GuestQueue) GuestQueue = Cus1;
                 SwapNode(list, Cus1, Cus2);
