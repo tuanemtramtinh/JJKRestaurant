@@ -332,7 +332,7 @@ public:
             }
             tempOrder = tempOrder -> next;
         }
-        TotalSpiritEnergy += TotalSocererEnergy;
+        //TotalSpiritEnergy += TotalSocererEnergy;
         TotalSpiritEnergy = abs(TotalSpiritEnergy);
         //! Tổng ENERGY của tất cả chú thuật sư lớn hơn hoặc bằng tổng trị tuyệt đối ENERGY
         //của tất cả chú linh có mặt tại nhà hàng
