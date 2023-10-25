@@ -647,7 +647,7 @@ bool imp_res::checkCus(Restaurant::customer * Cus1, Restaurant::customer *Cus2) 
 
 int imp_res::InsSort(Restaurant::customer*& list, int size, int incr) {
     int SwapCount = 0; //! Đếm số lần Swap
-    for (int i = incr; i < size; i++){
+    for (int i = incr; i < size; i += incr){
         for (int j = i; j >= incr /*&& abs(at(list, j) -> energy) > abs(at(list, j - incr) -> energy)*/; j -= incr){
             customer* Cus1 = at(list, j);
             customer* Cus2 = at(list, j - incr);
